@@ -1,0 +1,109 @@
+Sub AnalyzeStockData()
+    Dim ws As Worksheet
+    Dim ticker As String
+    Dim openPrice As Double
+    Dim closePrice As Double
+    Dim quarterlyChange As Double
+    Dim percentChange As Double
+    Dim totalVolume As Double
+    Dim lastRow As Long
+    Dim outputRow As Long
+    Dim greatestIncrease As Double
+    Dim greatestDecrease As Double
+    Dim greatestVolume As Double
+    Dim greatestIncreaseTicker As String
+    Dim greatestDecreaseTicker As String
+    Dim greatestVolumeTicker As String
+
+    ' Loop through all worksheets
+    For Each ws In ThisWorkbook.Worksheets
+        ws.Activate
+
+        ' Initialize variables
+        lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        outputRow = 2 ' Start output below headers
+
+        greatestIncrease = 0
+        greatestDecrease = 0
+        greatestVolume = 0
+
+        ' Add headers to the output table
+        ws.Cells(1, 9).Value = "Ticker"
+        ws.Cells(1, 10).Value = "Quarterly Change"
+        ws.Cells(1, 11).Value = "% Change"
+        ws.Cells(1, 12).Value = "Total Volume"
+
+        ' Initialize the first ticker data
+        openPrice = ws.Cells(2, 3).Value
+        totalVolume = 0
+
+        ' Loop through rows
+        For i = 2 To lastRow
+            ' Add to total volume
+            totalVolume = totalVolume + ws.Cells(i, 7).Value
+
+            ' Check if ticker changes or end of data
+            If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Or i = lastRow Then
+                ' Capture the ticker and close price
+                ticker = ws.Cells(i, 1).Value
+                closePrice = ws.Cells(i, 6).Value
+
+                ' Calculate quarterly change and percent change
+                quarterlyChange = closePrice - openPrice
+                If openPrice <> 0 Then
+                    percentChange = (quarterlyChange / openPrice) * 100
+                Else
+                    percentChange = 0
+                End If
+
+                ' Write data to output table
+                ws.Cells(outputRow, 9).Value = ticker
+                ws.Cells(outputRow, 10).Value = quarterlyChange
+                ws.Cells(outputRow, 11).Value = percentChange
+                ws.Cells(outputRow, 12).Value = totalVolume
+
+                ' Apply conditional formatting
+                If quarterlyChange > 0 Then
+                    ws.Cells(outputRow, 10).Interior.Color = RGB(144, 238, 144) ' Light green
+                Else
+                    ws.Cells(outputRow, 10).Interior.Color = RGB(255, 99, 71) ' Light red
+                End If
+
+                ' Update greatest values
+                If percentChange > greatestIncrease Then
+                    greatestIncrease = percentChange
+                    greatestIncreaseTicker = ticker
+                End If
+                If percentChange < greatestDecrease Then
+                    greatestDecrease = percentChange
+                    greatestDecreaseTicker = ticker
+                End If
+                If totalVolume > greatestVolume Then
+                    greatestVolume = totalVolume
+                    greatestVolumeTicker = ticker
+                End If
+
+                ' Reset for next ticker
+                openPrice = ws.Cells(i + 1, 3).Value
+                totalVolume = 0
+                outputRow = outputRow + 1
+            End If
+        Next i
+
+        ' Add summary data
+        ws.Cells(2, 14).Value = "Greatest % Increase"
+        ws.Cells(3, 14).Value = "Greatest % Decrease"
+        ws.Cells(4, 14).Value = "Greatest Total Volume"
+       
+        ws.Cells(2, 15).Value = greatestIncreaseTicker
+        ws.Cells(2, 16).Value = greatestIncrease
+       
+        ws.Cells(3, 15).Value = greatestDecreaseTicker
+        ws.Cells(3, 16).Value = greatestDecrease
+       
+        ws.Cells(4, 15).Value = greatestVolumeTicker
+        ws.Cells(4, 16).Value = greatestVolume
+    Next ws
+
+    MsgBox "Stock data analysis complete!", vbInformation
+End Sub
